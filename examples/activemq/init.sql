@@ -1,0 +1,4 @@
+CREATE SCHEMA activemq;
+ALTER DATABASE activemq SET SEARCH_PATH TO activemq;
+ALTER ROLE postgres SET SEARCH_PATH = activemq;
+GRANT ALL PRIVILEGES ON SCHEMA activemq TO postgres;

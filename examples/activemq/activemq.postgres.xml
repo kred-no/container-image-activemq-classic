@@ -1,0 +1,169 @@
+<!-- Customized; from: http://svn.apache.org/repos/asf/activemq/trunk/assembly/src/release/conf/activemq.xml -->
+
+<beans
+  xmlns="http://www.springframework.org/schema/beans"
+  xmlns:amq="http://activemq.apache.org/schema/core"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+  http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd">
+
+    <!-- Allows us to use system properties as variables in this configuration file -->
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>file:${activemq.conf}/credentials.properties</value>
+                <value>file:${activemq.conf}/postgres.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <!-- Postgres Persistence Configuration. 'Id' is used in persistence configuration -->
+    <!--<bean id="postgres-ds" class="org.apache.commons.dbcp2.BasicDataSource"> -->
+    <bean id="postgres-ds" class="org.apache.commons.dbcp2.BasicDataSource">
+        <property name="driverClassName" value="org.postgresql.Driver" />
+        <property name="url" value="jdbc:postgresql://${postgres.host}:${postgres.port}/${postgres.database}?targetServerType=master" />
+        <property name="username" value="${postgres.username}" />
+        <property name="password" value="${postgres.password}" />
+        <property name="maxTotal" value="20" />
+        <property name="initialSize" value="5" />
+        <property name="maxIdle" value="5" />
+        <property name="validationQuery" value="select 1" />
+        <property name="testWhileIdle" value="true" />
+        <property name="timeBetweenEvictionRunsMillis" value="5000" />
+        <property name="connectionProperties" value="[targetServerType=master,readOnly=false]"/>
+    </bean>
+
+    <broker xmlns="http://activemq.apache.org/schema/core" brokerName="localhost" dataDirectory="${activemq.data}">
+
+        <!--
+            For better performances use VM cursor and small memory limit.
+            For more information, see:
+
+            http://activemq.apache.org/message-cursors.html
+
+            Also, if your producer is "hanging", it's probably due to producer flow control.
+            For more information, see:
+            http://activemq.apache.org/producer-flow-control.html
+        -->
+
+        <destinationPolicy>
+            <policyMap>
+              <policyEntries>
+                <policyEntry topic=">" producerFlowControl="true">
+                    <!-- The constantPendingMessageLimitStrategy is used to prevent
+                         slow topic consumers to block producers and affect other consumers
+                         by limiting the number of messages that are retained
+                         For more information, see:
+
+                         http://activemq.apache.org/slow-consumer-handling.html
+
+                    -->
+                  <pendingMessageLimitStrategy>
+                    <constantPendingMessageLimitStrategy limit="1000"/>
+                  </pendingMessageLimitStrategy>
+                </policyEntry>
+                <policyEntry queue=">" producerFlowControl="true" memoryLimit="1mb">
+                  <!-- Use VM cursor for better latency
+                       For more information, see:
+
+                       http://activemq.apache.org/message-cursors.html
+
+                  <pendingQueuePolicy>
+                    <vmQueueCursor/>
+                  </pendingQueuePolicy>
+                  -->
+                </policyEntry>
+              </policyEntries>
+            </policyMap>
+        </destinationPolicy>
+
+
+        <!--
+            The managementContext is used to configure how ActiveMQ is exposed in
+            JMX. By default, ActiveMQ uses the MBean server that is started by
+            the JVM. For more information, see:
+
+            http://activemq.apache.org/jmx.html
+        -->
+        <managementContext>
+            <managementContext createConnector="false"/>
+        </managementContext>
+
+        <!--
+            Configure message persistence for the broker.
+            For more information, see:
+
+            http://activemq.apache.org/persistence.html
+        -->
+        
+        <persistenceAdapter>
+            <jdbcPersistenceAdapter dataDirectory="${activemq.data}" dataSource="#postgres-ds" createTablesOnStartup="true" lockKeepAlivePeriod="5000">
+                <locker>
+                    <lease-database-locker leaseHolderId="i-kos" lockAcquireSleepInterval="10000"/>
+                </locker>
+            </jdbcPersistenceAdapter>
+        </persistenceAdapter>
+
+        <!--
+            The systemUsage controls the maximum amount of space the broker will
+            use before slowing down producers. For more information, see:
+            http://activemq.apache.org/producer-flow-control.html
+        -->
+        
+        <systemUsage>
+            <systemUsage>
+                <memoryUsage>
+                    <memoryUsage limit="64 mb"/>
+                </memoryUsage>
+                <storeUsage>
+                    <storeUsage limit="2 gb"/>
+                </storeUsage>
+                <tempUsage>
+                    <tempUsage limit="500 mb"/>
+                </tempUsage>
+            </systemUsage>
+        </systemUsage>
+
+        <!-- Defaults Below
+        <systemUsage>
+            <systemUsage>
+                <memoryUsage>
+                    <memoryUsage limit="64 mb"/>
+                </memoryUsage>
+                <storeUsage>
+                    <storeUsage limit="100 gb"/>
+                </storeUsage>
+                <tempUsage>
+                    <tempUsage limit="50 gb"/>
+                </tempUsage>
+            </systemUsage>
+        </systemUsage>
+        -->
+
+        <!--
+            The transport connectors expose ActiveMQ over a given protocol to
+            clients and other brokers. For more information, see:
+
+            http://activemq.apache.org/configuring-transports.html
+        -->
+
+        <transportConnectors>
+            <!-- DOS protection, limit concurrent connections to 1000 and frame size to 100MB -->
+            <transportConnector name="openwire" uri="tcp://0.0.0.0:61616?maximumConnections=1000&amp;wireFormat.maxFrameSize=104857600"/>
+            <transportConnector name="amqp" uri="amqp://0.0.0.0:5672?maximumConnections=1000&amp;wireFormat.maxFrameSize=104857600"/>
+        </transportConnectors>
+
+        <!-- destroy the spring context on shutdown to stop jetty -->
+        <shutdownHooks>
+            <bean xmlns="http://www.springframework.org/schema/beans" class="org.apache.activemq.hooks.SpringContextHook" />
+        </shutdownHooks>
+
+    </broker>
+
+    <!--
+        Enable web consoles, REST and Ajax APIs and demos
+        Take a look at ${ACTIVEMQ_HOME}/conf/jetty.xml for more details
+    -->
+
+    <import resource="jetty.xml"/>
+</beans>

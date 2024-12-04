@@ -1,0 +1,17 @@
+service:
+  daemon: off
+  http_server: off
+  flush: 10
+  log_level: info
+
+pipeline:
+  inputs:
+    - name: prometheus_scrape
+      tag: activemq.prometheus
+      host: telegraf
+      port: 9273
+      metrics_path: /metrics
+      scrape_interval: 5s
+  outputs:
+    - name: stdout
+      match: '*.prometheus'

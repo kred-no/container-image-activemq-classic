@@ -1,0 +1,17 @@
+volumes:
+  activemq-data: {}
+
+services:
+  activemq-broker:
+    hostname: activemq-broker
+    restart: unless-stopped
+    build:
+      context: ../docker/
+      dockerfile: Dockerfile.debian
+    environment:
+      ADMIN_USERNAME: system
+      ADMIN_PASSWORD: manager
+    volumes:
+      - activemq-data:/opt/activemq/data:rw
+      - ./activemq/activemq.kaha.xml:/opt/activemq/conf/activemq.xml:ro
+    ports: ["8161:8161"]

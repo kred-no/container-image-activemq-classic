@@ -1,0 +1,112 @@
+# https://mvnrepository.com/artifact/fish.payara
+# Payara ONLY supports Java LTS versions (8,11,17)
+# https://blog.payara.fish/why-payara-platform-only-supports-lts-versions-of-jdk
+
+########################
+## BUILD ARGS
+########################
+
+ARG base_image_name="docker.io/azul/zulu-openjdk-debian"
+ARG base_image_tag="21-jre-headless"
+
+ARG activemq_version="6.1.4"
+ARG activemq_sha512="a88f672e5190e122cdcd251b01acc0a2fa20695c1da2f0c93269ba50f4554ce01b980fd5082be86ab99f5d3161ce137cdf74013b29da477161b6a60b3993ba46"
+ARG postgres_jdbc_version="42.7.4"
+ARG postgres_jdbc_sha1="264310fd7b2cd76738787dc0b9f7ea2e3b11adc1"
+
+########################
+## Create Base Image
+########################
+
+FROM ${base_image_name}:${base_image_tag} AS base
+
+ENV LC_ALL="C" \
+    JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=85.0 -XX:InitialRAMPercentage=85.0 -XX:+ExitOnOutOfMemoryError"
+
+# Add locales
+RUN <<HEREDOC
+#!/usr/bin/env bash
+sed -i "/nb_NO/s/^# \?//g" /etc/locale.gen
+locale-gen
+
+echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+apt-get update
+apt-get -qqy install --no-install-recommends apt-utils > /dev/null 2>&1
+HEREDOC
+
+########################
+## Builder
+########################
+
+FROM base AS builder
+
+ARG activemq_version
+ARG activemq_sha512
+ARG postgres_jdbc_version
+ARG postgres_jdbc_sha1
+
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=85.0 -XX:InitialRAMPercentage=85.0 -XX:+ExitOnOutOfMemoryError" \
+    ACTIVEMQ_HOME="/opt/activemq"
+    
+RUN <<HEREDOC
+#!/usr/bin/env bash
+set -ex
+apt-get -qqy install --no-install-recommends tar unzip curl wget gpg coreutils
+
+# Download ActiveMQ
+curl -L -o /tmp/activemq.tar.gz "https://dlcdn.apache.org/activemq/${activemq_version}/apache-activemq-${activemq_version}-bin.tar.gz"
+echo "${activemq_sha512} */tmp/activemq.tar.gz" | sha512sum -c -
+mkdir -p ${ACTIVEMQ_HOME}
+tar xzf /tmp/activemq.tar.gz -C ${ACTIVEMQ_HOME} --strip-components=1
+
+# Download JDBC Resoruces
+curl -L -o ${ACTIVEMQ_HOME}/lib/optional/postgresql-${postgres_jdbc_version}.jar "https://repo1.maven.org/maven2/org/postgresql/postgresql/${postgres_jdbc_version}/postgresql-${postgres_jdbc_version}.jar"
+echo "${postgres_jdbc_sha1} *${ACTIVEMQ_HOME}/lib/optional/postgresql-${postgres_jdbc_version}.jar" | sha1sum -c -
+
+# Update ActiveMQ Config Defaults for use in Container
+sed -i 's/127.0.0.1/0.0.0.0/g' ${ACTIVEMQ_HOME}/conf/jetty.xml
+sed -i 's/127.0.0.1/0.0.0.0/g' ${ACTIVEMQ_HOME}/conf/activemq.xml
+sed -ri 's/^(\s*)ACTIVEMQ_OPTS_MEMORY=(.*)/\1ACTIVEMQ_OPTS_MEMORY="-XX:MaxRAMPercentage=85.0 -XX:InitialRAMPercentage=85.0 -XX:+ExitOnOutOfMemoryError"/g' ${ACTIVEMQ_HOME}/bin/setenv
+HEREDOC
+
+########################
+## Create Runtime Image
+########################
+
+FROM base
+
+ENV TZ="Europe/Oslo" \
+    JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=85.0 -XX:InitialRAMPercentage=85.0 -XX:+ExitOnOutOfMemoryError" \
+    ACTIVEMQ_USER="activemq" \
+    ACTIVEMQ_HOME="/opt/activemq"
+
+ENV PATH="${ACTIVEMQ_HOME}/bin:${PATH}" \
+    ACTIVEMQ_CONF="${ACTIVEMQ_HOME}/conf" \
+    ACTIVEMQ_DATA="${ACTIVEMQ_HOME}/data" \
+    ACTIVEMQ_TMP="${ACTIVEMQ_HOME}/tmp"
+
+ENV ACTIVEMQ_ENCRYPTION_PASSWORD='activemq' \
+    ADMIN_USERNAME='admin' \
+    ADMIN_PASSWORD='admin' \
+    GUEST_PASSWORD='password' \
+    SYSTEM_USERNAME='system' \
+    SYSTEM_PASSWORD='manager'
+
+# activemq --encrypt activemq --input manager
+# activemq --decrypt activemq --input <ecn>
+
+RUN <<HEREDOC
+#!/usr/bin/env bash
+useradd --system --comment "ActiveMQ Service User" --home-dir ${ACTIVEMQ_HOME} --no-create-home --user-group activemq
+apt-get -qqy install --no-install-recommends gosu dumb-init
+apt-get clean
+rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+apt-get autoremove
+HEREDOC
+
+COPY --from=builder --chown=activemq:activemq ["/opt/activemq", "${ACTIVEMQ_HOME}"]
+COPY --chmod=544 ["files/docker-entrypoint.debian.sh", "/usr/local/bin/docker-entrypoint.sh"]
+
+EXPOSE 5672 8161 61616
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["/opt/activemq/bin/activemq", "console"]

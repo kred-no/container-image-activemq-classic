@@ -1,0 +1,37 @@
+# https://github.com/prometheus-community/postgres_exporter
+volumes: 
+  prometheus-data: {}
+
+services:
+  prometheus:
+    image: docker.io/prom/prometheus:latest
+    hostname: prometheus
+    restart: unless-stopped
+    ports: ["9090:9090"]
+    volumes:
+      - prometheus-data:/prometheus:rw
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  
+  telegraf:
+    image: docker.io/library/telegraf:latest
+    hostname: telegraf
+    restart: unless-stopped
+    depends_on:
+      - activemq-broker
+    environment:
+      ACTIVEMQ_WEBADMIN: admin
+      ACTIVEMQ_USERNAME: system
+      ACTIVEMQ_PASSWORD: manager
+    volumes:
+      - ./monitoring/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+
+  # fluentbit:
+  #   image: docker.io/fluent/fluent-bit:latest
+  #   hostname: fluentbit
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - prometheus
+  #     - telegraf
+  #   command: ["/fluent-bit/bin/fluent-bit". "-c", "/fluentbit.yml"]
+  #   volumes:
+  #     - ./monitoring/fluentbit.yml:/fluentbit.yml:ro
