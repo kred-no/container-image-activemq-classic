@@ -1,0 +1,100 @@
+# https://docs.docker.com/build/ci/github-actions/manage-tags-labels/
+# https://docs.docker.com/build/ci/github-actions/test-before-push/
+# https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows
+---
+name: Apache ActiveMQ Classic
+
+on:
+  workflow_dispatch:
+  
+  schedule:
+    - cron: "15 02 */14 * *" # Every 14-day @02:15
+  
+  release:
+    types:
+      - published
+
+env:
+  postgres_jdbc_version: '42.7.4'
+  postgres_jdbc_sha1: '264310fd7b2cd76738787dc0b9f7ea2e3b11adc1'
+  # ghcr_target: ${{ github.repository }}
+
+jobs:
+  build_and_publish:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ['ubuntu-latest']
+        image:
+          - name: docker.io/azul/zulu-openjdk-debian
+            tag: '21-jre-headless'
+          - name: docker.io/azul/zulu-openjdk-debian
+            tag: '17-jre-headless'
+        activemq:
+          - ver: '6.1.4'
+            sha512: 'a88f672e5190e122cdcd251b01acc0a2fa20695c1da2f0c93269ba50f4554ce01b980fd5082be86ab99f5d3161ce137cdf74013b29da477161b6a60b3993ba46'
+        #include : []
+        #exclude: []
+    
+    permissions:
+      packages: write
+      contents: read
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: docker
+      -
+        name: Set up QEMU for Docker
+        uses: docker/setup-qemu-action@v3
+      -
+        name: Setup Buildx for Docker
+        uses: docker/setup-buildx-action@v3
+      -
+        name: Login to Docker Hub
+        #if: true #github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: registry.hub.docker.com # docker.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Login to GitHub Container Registry (GHCR)
+        if: false
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      -
+        name: Configure Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            registry.hub.docker.com/kdsda/activemq-classic
+          flavor: |
+            prefix=${{ matrix.activemq.ver }}-${{ matrix.image.tag }}-
+          tags: |
+            type=schedule,pattern={{date 'YYYYMMDD-HHmmss' tz='Europe/Oslo'}}
+            type=ref,event=branch
+      -
+        name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: "{{defaultContext}}:docker"
+          file: Dockerfile.debian
+          push: false
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            base_image_name=${{ matrix.image.name }}
+            base_image_version=${{ matrix.image.tag }}
+            activemq_version=${{ matrix.activemq.ver }}
+            activemq_sha512=${{ matrix.activemq.sha512 }}
+            postgres_jdbc_version=${{ env.postgres_jdbc_version }}
+            postgres_jdbc_sha1=${{ env.postgres_jdbc_sha1 }}
