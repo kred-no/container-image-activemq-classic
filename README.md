@@ -4,9 +4,10 @@
 
 Container image builds for Apache ActiveMQ Classic message broker.
 
-| Release | Java RE    |
-| :--     | :--        |
-| `6.1.4` | `17`,`21`  |
+| Release     | Java RE       |
+| :--         | :--           |
+| `6.1.5`     | `17`,`21`     |
+| ~~`6.1.4`~~ | ~~`17`,`21`~~ |
 
 ```bash
 # Build & Run Locally
@@ -47,10 +48,10 @@ Se [`examples`](examples/) for other examples
 | :--  | :--     |
 | base_image_name       | `docker.io/azul/zulu-openjdk-debian` |
 | base_image_tag        | `21-jre-headless` |
-| activemq_version      | `6.1.4` |
-| activemq_sha512       | `a88f672e5190e122cdcd251b01acc0a2fa20695c1da2f0c93269ba50f4554ce01b980fd5082be86ab99f5d3161ce137cdf74013b29da477161b6a60b3993ba46` |
-| postgres_jdbc_version | `42.7.4` |
-| postgres_jdbc_sha1    | `264310fd7b2cd76738787dc0b9f7ea2e3b11adc1` |
+| activemq_version      | `6.1.5` |
+| activemq_sha512       | `78bf174889ee4d20c220acc9008802f5d10c1253c0190d2b4a3b03c752a2d1a0ff9d2d36213b2f91e3b6d636cd8b0724a5046d0cd6519264a2841a4a09d43cff` |
+| postgres_jdbc_version | `42.7.5` |
+| postgres_jdbc_sha1    | `747897987b86c741fb8b56f6b81929ae1e6e4b46` |
 
 ## Resources
 
