@@ -4,11 +4,6 @@
 
 Container image builds for Apache ActiveMQ Classic message broker.
 
-| Release     | Java RE       |
-| :--         | :--           |
-| `6.1.5`     | `17`,`21`     |
-| ~~`6.1.4`~~ | ~~`17`,`21`~~ |
-
 ```bash
 # Build & Run Locally
 export image="local/activemq:latest"
