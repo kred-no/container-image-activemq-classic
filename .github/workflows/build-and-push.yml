@@ -33,7 +33,7 @@ jobs:
             name: docker.io/azul/zulu-openjdk-debian
             tag: '17-jre-headless'
         activemq:
-          - ver: '6.1.6'
+          - ver: '6.1.7'
             sha512: '0ec7809387dc83a08d5b6ceb7adad9dc999d302088f882919d155bf228962a80582695abcd6e8f43f3f6e6d4639aa73ed064b1b28b131f6228d516e7422296b0'
         #include : []
         #exclude: []
