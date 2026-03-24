@@ -17,22 +17,22 @@ Container image builds for Apache ActiveMQ Classic message broker.
 
 | Name | Description | Default |
 | --:  | :--         | :--     |
-| TZ              | N/A | `Europe/Oslo` |
 | ADMIN_USERNAME  | N/A | `admin` |
 | ADMIN_PASSWORD  | N/A | `admin` |
 | GUEST_PASSWORD  | N/A | `password` |
 | SYSTEM_USERNAME | N/A | `system` |
 | SYSTEM_PASSWORD | N/A | `manager` |
+| TZ              | N/A | `Europe/Oslo` |
 
 
 ## Variables (temurin)
 
 | Name | Description | Default |
 | --:  | :--         | :--     |
-| ACTIVEMQ_CONNECTION_USER     | Override Console User     | `admin (unset)` |
-| ACTIVEMQ_CONNECTION_PASSWORD | Override Console Password | `admin (unset)` |
-| ACTIVEMQ_WEB_USER            | Override MQueue User      | `system (unset)` |
-| ACTIVEMQ_WEB_PASSWORD        | Override MQueue Password  | `manager (unset)` |
+| ACTIVEMQ_CONNECTION_USER     | Override MQueue User      | `admin (unset)` |
+| ACTIVEMQ_CONNECTION_PASSWORD | Override MQueue Password  | `admin (unset)` |
+| ACTIVEMQ_WEB_USER            | Override Console User     | `system (unset)` |
+| ACTIVEMQ_WEB_PASSWORD        | Override Console Password | `manager (unset)` |
 | ACTIVEMQ_JMX_USER            | Override JMX User         | `admin (unset)` |
 | ACTIVEMQ_JMX_PASSWORD        | Override JMX Password     | `activemq (unset)` |
 | ACTIVEMQ_OPTS                | ActiveMQ Runtime Flags    | `-Djava.util.logging.config.file=logging.properties -Djava.security.auth.login.config=${ACTIVEMQ_CONF}/login.config -Djetty.host=0.0.0.0` |
