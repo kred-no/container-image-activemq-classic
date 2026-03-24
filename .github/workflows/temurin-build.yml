@@ -83,7 +83,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
-            build_image="docker.io/alpine/ansible:${{ matrix.version.builder }}
+            build_image=docker.io/alpine/ansible:${{ matrix.version.builder }}
             runtime_image=docker.io/eclipse-temurin:${{ matrix.version.runtime }}
             activemq_version=${{ matrix.version.activemq }}
             hawtio_version=${{ matrix.version.hawtio }}
