@@ -67,7 +67,7 @@ jobs:
           images: |
             registry.hub.docker.com/kdsda/activemq-classic
           flavor: |
-            prefix=${{ matrix.image.version.activemq }}-temurin-${{ matrix.image.version.runtime }}-
+            prefix=${{ matrix.version.activemq }}-temurin-${{ matrix.version.runtime }}-
           tags: |
             type=schedule,pattern={{date 'YYYYMMDD-HHmmss' tz='Europe/Oslo'}}
             type=ref,event=branch
@@ -83,7 +83,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
             build_image="docker.io/alpine/ansible:3"
-            runtime_image=docker.io/eclipse-temurin:${{ matrix.versions.runtime }}
+            runtime_image=docker.io/eclipse-temurin:${{ matrix.version.runtime }}
             activemq_version=${{ matrix.version.activemq }}
             hawtio_version=${{ matrix.version.hawtio }}
             postgres_version=${{ matrix.version.postgres }}

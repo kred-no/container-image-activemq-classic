@@ -25,8 +25,7 @@ jobs:
       matrix:
         os: ['ubuntu-latest']
         image:
-          -
-            name: docker.io/azul/zulu-openjdk-debian
+          - name: docker.io/azul/zulu-openjdk-debian
             tag: '25-jre-headless'
         activemq:
           - ver: '6.2.1'
