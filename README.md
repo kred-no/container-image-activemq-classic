@@ -1,8 +1,60 @@
 # container-image-activemq-classic
 
-![build](https://github.com/kred-no/container-image-activemq-classic/actions/workflows/build-and-push.yml/badge.svg)
+![build](https://github.com/kred-no/container-image-activemq-classic/actions/workflows/debian-build.yml/badge.svg)
+![build](https://github.com/kred-no/container-image-activemq-classic/actions/workflows/temurin-build.yml/badge.svg)
 
 Container image builds for Apache ActiveMQ Classic message broker.
+
+  * [Docker Hub Registry]("https://hub.docker.com/r/kdsda/activemq-classic")
+
+#### Tags
+
+  * `<activemq-version>-debian-<java-version>-<build-id>`
+  * `<activemq-version>-temurin-<java-version>-<build-id>`
+
+
+## Runtime Variables (debian)
+
+| Name | Description | Default |
+| --:  | :--         | :--     |
+| TZ              | N/A | `Europe/Oslo` |
+| ADMIN_USERNAME  | N/A | `admin` |
+| ADMIN_PASSWORD  | N/A | `admin` |
+| GUEST_PASSWORD  | N/A | `password` |
+| SYSTEM_USERNAME | N/A | `system` |
+| SYSTEM_PASSWORD | N/A | `manager` |
+
+
+## Variables (temurin)
+
+| Name | Description | Default |
+| --:  | :--         | :--     |
+| ACTIVEMQ_CONNECTION_USER     | Override Console User     | `admin (unset)` |
+| ACTIVEMQ_CONNECTION_PASSWORD | Override Console Password | `admin (unset)` |
+| ACTIVEMQ_WEB_USER            | Override MQueue User      | `system (unset)` |
+| ACTIVEMQ_WEB_PASSWORD        | Override MQueue Password  | `manager (unset)` |
+| ACTIVEMQ_JMX_USER            | Override JMX User         | `admin (unset)` |
+| ACTIVEMQ_JMX_PASSWORD        | Override JMX Password     | `activemq (unset)` |
+| ACTIVEMQ_OPTS                | ActiveMQ Runtime Flags    | `-Djava.util.logging.config.file=logging.properties -Djava.security.auth.login.config=${ACTIVEMQ_CONF}/login.config -Djetty.host=0.0.0.0` |
+| JAVA_TOOL_OPTIONS            | Java Runtime Flags        | `-XX:+ExitOnOutOfMemoryError -XX:InitialRAMPercentage=50.0 -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxGCPauseMillis=500 -XX:+PerfDisableSharedMem -Xss512k -Xshare:on -Xlog:gc*:stdout:uptime,level,tags` |
+| TZ                           | Timezone                  | `Europe/Oslo` |
+
+>NOTE: Entrypoint based on official activemq classic container build
+
+
+## Misc File/Folder Locations
+
+| Location | Description | 
+| --:      | :--         |
+| `/opt/activemq/conf/activemq.xml` | Primary configuration file |
+| `/opt/activemq/conf/jetty.xml`    | Jetty/console configuration file |
+| `/opt/activemq/data`              | Data folder (e.g. KahaDB) |
+| `/usr/local/bin/entrypoint`       | Entrypoint for container |
+
+>NOTE: If you override any files, take care in case entrypoint parse them on startup.
+
+
+## Local Development
 
 ```bash
 # Build & Run Locally
@@ -19,34 +71,7 @@ export $tag="6.1.4-21-jre-headless-main"
 docker run --rm -it -e ADMIN_PASSWORD=Secret -p 8161:8161 -p 61616:61616 docker.io/kdsda/activemq-classic:$tag
 ```
 
-Se [`examples`](examples/) for other examples
-
-## Runtime Variables
-
-| NAME | DEFAULT |
-| :--  | :--     |
-| TZ              | `Europe/Oslo` |
-| ACTIVEMQ_USER   | `activemq` |
-| ACTIVEMQ_HOME   | `/opt/activemq` |
-| ACTIVEMQ_CONF   | `${ACTIVEMQ_HOME}/conf` |
-| ACTIVEMQ_DATA   | `${ACTIVEMQ_HOME}/data` |
-| ACTIVEMQ_TMP    | `${ACTIVEMQ_HOME}/tmp` |
-| ADMIN_USERNAME  | `admin` |
-| ADMIN_PASSWORD  | `admin` |
-| GUEST_PASSWORD  | `password` |
-| SYSTEM_USERNAME | `system` |
-| SYSTEM_PASSWORD | `manager` |
-
-## Build Arguments
-
-| NAME | DEFAULT |
-| :--  | :--     |
-| base_image_name       | `docker.io/azul/zulu-openjdk-debian` |
-| base_image_tag        | `21-jre-headless` |
-| activemq_version      | `6.1.5` |
-| activemq_sha512       | `78bf174889ee4d20c220acc9008802f5d10c1253c0190d2b4a3b03c752a2d1a0ff9d2d36213b2f91e3b6d636cd8b0724a5046d0cd6519264a2841a4a09d43cff` |
-| postgres_jdbc_version | `42.7.5` |
-| postgres_jdbc_sha1    | `747897987b86c741fb8b56f6b81929ae1e6e4b46` |
+See [`examples`](examples/) for other examples.
 
 ## Resources
 

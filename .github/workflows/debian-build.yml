@@ -2,17 +2,16 @@
 # https://docs.docker.com/build/ci/github-actions/test-before-push/
 # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows
 ---
-name: Apache ActiveMQ Classic
+name: debian
 
 on:
   workflow_dispatch:
   
-  schedule:
-    - cron: "15 02 */14 * *" # Every 14-day @02:15
-  
-  release:
-    types:
-      - published
+  #schedule:
+  #  - cron: "15 02 */28 * *" # Every 14-day @02:15
+  #release:
+  #  types:
+  #    - published
 
 env:
   postgres_jdbc_version: '42.7.7'
@@ -28,13 +27,12 @@ jobs:
         image:
           -
             name: docker.io/azul/zulu-openjdk-debian
-            tag: '21-jre-headless'
-          -
-            name: docker.io/azul/zulu-openjdk-debian
-            tag: '17-jre-headless'
+            tag: '25-jre-headless'
         activemq:
-          - ver: '6.1.7'
-            sha512: '948a3c0757c72e3a5cdce41cff3b79ce0ea9ea1c5235e203cd5136860ee3d7db820eb1087a077254c51f10d388a91983847479d1d546cc067445dd12f5275f83'
+          - ver: '6.2.1'
+            sha512: 'c1ed6f5ca467b4ed226644ea5d1cb034a71262c253cef1a6d57bdab4755c2f5b9d002954cc74248945e53b5c1c24c99f300e61968ed001f1c1360f297610cf8f'
+          #- ver: '6.1.7'
+          #  sha512: '948a3c0757c72e3a5cdce41cff3b79ce0ea9ea1c5235e203cd5136860ee3d7db820eb1087a077254c51f10d388a91983847479d1d546cc067445dd12f5275f83'
         #include : []
         #exclude: []
     
@@ -82,7 +80,7 @@ jobs:
           images: |
             registry.hub.docker.com/kdsda/activemq-classic
           flavor: |
-            prefix=${{ matrix.activemq.ver }}-${{ matrix.image.tag }}-
+            prefix=${{ matrix.activemq.ver }}-debian-${{ matrix.image.tag }}-
           tags: |
             type=schedule,pattern={{date 'YYYYMMDD-HHmmss' tz='Europe/Oslo'}}
             type=ref,event=branch
@@ -90,7 +88,7 @@ jobs:
         name: Build and Push
         uses: docker/build-push-action@v6
         with:
-          context: "{{defaultContext}}:docker"
+          context: "{{defaultContext}}:src/debian"
           file: Dockerfile.debian
           platforms: linux/amd64,linux/arm64
           push: true

@@ -1,0 +1,33 @@
+# Example
+#   - Running ActiveMQ Classic
+#   - Connecting Hawtio console to container, using jmx
+---
+networks:
+  queue_backend: {}
+
+services:
+  activemq:
+    hostname: activemq
+    image: local-activemq:temurin
+    build:
+      context: ../../docker
+      dockerfile: Dockerfile.temurin
+    environment:
+      ACTIVEMQ_OPTS: "-javaagent:/opt/apache-activemq/lib/jolokia-jvm.jar=port=8778,host=0.0.0.0 -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
+    networks:
+      - queue_backend
+
+  hawtio:
+    hostname: hawtio
+    image: local-hawtio:temurin
+    build:
+      context: .
+      dockerfile: Dockerfile.hawtio
+    depends_on:
+      - activemq
+    environment:
+      CATALINA_OPTS: "$CATALINA_OPTS -Dhawtio.authenticationEnabled=false -Dhawtio.proxyAllowlist=* -Dhawtio.remote.name=activemq -Dhawtio.remote.host=activemq -Dhawtio.remote.port=8778 -Dhawtio.remote.path=jolokia"
+    networks:
+      - queue_backend
+    ports:
+      - "8080:8080"

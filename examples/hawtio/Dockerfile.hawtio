@@ -1,0 +1,26 @@
+ARG build_image="docker.io/alpine:3"
+ARG runtime_image="docker.io/tomcat:jre25-temurin"
+
+# ----------------------
+# BUILDER
+# ----------------------
+
+FROM $build_image  AS builder
+
+ARG hawtio_version=5.0.1
+RUN set -ex \
+  && apk add --no-cache curl \
+  && curl -L -o /hawtio.war "https://github.com/hawtio/hawtio/releases/download/hawtio-${hawtio_version}/hawtio-default-${hawtio_version}.war"
+
+# ----------------------
+# RUNTIME
+# ----------------------
+
+FROM $runtime_image
+
+RUN set -ex \
+  && rm -rf /usr/local/tomcat/webapps/*
+
+COPY --from=builder ["/hawtio.war", "/usr/local/tomcat/webapps/hawtio.war"]
+COPY tomcat-users.xml /usr/local/tomcat/conf/tomcat-users.xml
+EXPOSE 8080

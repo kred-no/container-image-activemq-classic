@@ -6,7 +6,7 @@ services:
     hostname: activemq-broker
     restart: unless-stopped
     build:
-      context: ../docker/
+      context: ../../src/debian
       dockerfile: Dockerfile.debian
     environment:
       ADMIN_USERNAME: system

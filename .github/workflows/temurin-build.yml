@@ -1,0 +1,89 @@
+# https://docs.docker.com/build/ci/github-actions/manage-tags-labels/
+# https://docs.docker.com/build/ci/github-actions/test-before-push/
+# https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows
+---
+name: temurin
+
+on:
+  workflow_dispatch:
+  
+env: {}
+  # ghcr_target: ${{ github.repository }}
+
+jobs:
+  build_and_publish:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ['ubuntu-latest']
+        version:
+          - runtime: '25-jre'
+            activemq: '6.2.1'
+            hawtio: '1.7.2'
+            postgres: '42.7.10'
+        #include : []
+        #exclude: []
+    
+    permissions:
+      packages: write
+      contents: read
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v6
+        with:
+          path: docker
+      -
+        name: Set up QEMU for Docker
+        uses: docker/setup-qemu-action@v4
+      -
+        name: Setup Buildx for Docker
+        uses: docker/setup-buildx-action@v4
+        with:
+          platforms: linux/amd64,linux/arm64
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: registry.hub.docker.com # docker.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Login to GitHub Container Registry (GHCR)
+        if: false
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      -
+        name: Configure Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            registry.hub.docker.com/kdsda/activemq-classic
+          flavor: |
+            prefix=${{ matrix.image.version.activemq }}-temurin-${{ matrix.image.version.runtime }}-
+          tags: |
+            type=schedule,pattern={{date 'YYYYMMDD-HHmmss' tz='Europe/Oslo'}}
+            type=ref,event=branch
+      -
+        name: Build and Push
+        uses: docker/build-push-action@v7
+        with:
+          context: "{{defaultContext}}:src/temurin"
+          file: Dockerfile.debian
+          platforms: linux/amd64,linux/arm64
+          push: true
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            build_image="docker.io/alpine/ansible:3"
+            runtime_image=docker.io/eclipse-temurin:${{ matrix.versions.runtime }}
+            activemq_version=${{ matrix.version.activemq }}
+            hawtio_version=${{ matrix.version.hawtio }}
+            postgres_version=${{ matrix.version.postgres }}

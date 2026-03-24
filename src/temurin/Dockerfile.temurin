@@ -1,0 +1,119 @@
+ARG build_image="docker.io/alpine/ansible:latest"
+ARG runtime_image="docker.io/eclipse-temurin:25-jre"
+
+# ----------------------
+# Build Image
+# ----------------------
+
+FROM $build_image AS builder
+
+ARG activemq_version="6.2.1"
+ARG hawtio_agent_version="1.6.2"
+ARG hawtio_version="1.7.2"
+ARG postgres_version="42.7.10"
+
+COPY <<PLAYBOOK playbook.yml
+# Ansible Playbook
+---
+- name: ActiveMQ Ansible Builder
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    export_folder: /exports
+  tasks:
+    -
+      name: Install required packages
+      become: true
+      ansible.builtin.package:
+        name:
+          - unzip
+          - tar
+        state: present
+    -
+      name: Create Export Folder
+      become: true
+      ansible.builtin.file:
+        path: "{{ export_folder }}"
+        state: directory
+        mode: '0755'
+    -
+      name: Download ActiveMQ Classic
+      ansible.builtin.get_url:
+        url: https://downloads.apache.org/activemq/{{ activemq_version }}/apache-activemq-{{ activemq_version }}-bin.tar.gz
+        checksum: "sha512:https://downloads.apache.org/activemq/{{ activemq_version }}/apache-activemq-{{ activemq_version }}-bin.tar.gz.sha512"
+        dest: "/tmp/apache-activemq-bin.tar.gz"
+      register: download_result
+      until: download_result is succeeded
+      retries: 3
+      delay: 10
+    -
+      name: Extract Archive
+      ansible.builtin.unarchive:
+        src: "{{ download_result.dest }}"
+        dest: "{{ export_folder }}"
+        extra_opts:
+          - '--strip-components=1'
+    -
+      name: Download hawtio agent
+      when: false
+      ansible.builtin.get_url:
+        url: "https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/{{ hawtio_agent_version }}/jolokia-jvm-{{ hawtio_agent_version }}-agent.jar"
+        checksum: "md5:https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/{{ hawtio_agent_version }}/jolokia-jvm-{{ hawtio_agent_version }}-agent.jar.md5"
+        dest: "{{ export_folder }}/lib/jolokia-jvm-agent.jar"
+    -
+      name: Download hawtio
+      ansible.builtin.get_url:
+        url: "https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/{{ hawtio_version }}/jolokia-jvm-{{ hawtio_version }}.jar"
+        checksum: "md5:https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/{{ hawtio_version }}/jolokia-jvm-{{ hawtio_version }}.jar.md5"
+        dest: "{{ export_folder }}/lib/jolokia-jvm.jar"
+    -
+      name: Download Postgres JDBC
+      ansible.builtin.get_url:
+        url: "https://repo1.maven.org/maven2/org/postgresql/postgresql/{{ postgres_version }}/postgresql-{{ postgres_version }}.jar"
+        checksum: "md5:https://repo1.maven.org/maven2/org/postgresql/postgresql/{{ postgres_version }}/postgresql-{{ postgres_version }}.jar.md5"
+        dest: "{{ export_folder }}/lib/postgresql.jar"
+
+PLAYBOOK
+
+RUN set -ex \
+  && ansible-playbook -i localhost, /playbook.yml \
+  --extra-vars="activemq_version=${activemq_version}" \
+  --extra-vars="hawtio_agent_version=${hawtio_agent_version}" \
+  --extra-vars="hawtio_version=${hawtio_version}" \
+  --extra-vars="postgres_version=${postgres_version}"
+
+# ----------------------
+# Runtime Image
+# ----------------------
+
+FROM $runtime_image
+
+ENV ACTIVEMQ_INSTALL_PATH /opt
+ENV ACTIVEMQ_HOME $ACTIVEMQ_INSTALL_PATH/apache-activemq
+ENV ACTIVEMQ_CONF $ACTIVEMQ_HOME/conf
+ENV ACTIVEMQ_EXEC exec
+ENV PATH $PATH:$ACTIVEMQ_HOME/bin
+
+COPY ["./docker-entrypoint.temurin.sh", "/usr/local/bin/entrypoint.sh"]
+
+RUN set -ex \
+  && groupadd --system activemq \
+  && useradd --system --gid activemq activemq \
+  && mkdir --parents $ACTIVEMQ_HOME \
+  && chown activemq:activemq /usr/local/bin/entrypoint.sh \
+  && chmod +x /usr/local/bin/entrypoint.sh
+
+COPY --from=builder ["/exports/", "$ACTIVEMQ_HOME/"]
+RUN chown --recursive activemq:activemq $ACTIVEMQ_HOME
+
+USER activemq
+
+ENV TZ="Europe/Oslo"
+ENV ACTIVEMQ_OPTS="-Djava.util.logging.config.file=logging.properties -Djava.security.auth.login.config=${ACTIVEMQ_CONF}/login.config -Djetty.host=0.0.0.0 "
+ENV JAVA_TOOL_OPTIONS="-XX:+ExitOnOutOfMemoryError -XX:InitialRAMPercentage=50.0 -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxGCPauseMillis=500 -XX:+PerfDisableSharedMem -Xss512k -Xshare:on -Xlog:gc*:stdout:uptime,level,tags"
+
+EXPOSE 8161 61616 5672 61613 1883 61614 1099
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["activemq", "console"]
