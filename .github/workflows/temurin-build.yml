@@ -76,7 +76,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: "{{defaultContext}}:src/temurin"
-          file: Dockerfile.debian
+          file: Dockerfile.temurin
           platforms: linux/amd64,linux/arm64
           push: true
           labels: ${{ steps.meta.outputs.labels }}
