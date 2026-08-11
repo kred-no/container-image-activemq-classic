@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## 2026-08-11
+  * **MISC**
+    * Added SOPS configuration.
   * **TEMURIN**
     * Added ActiveMQ build: 6.3.1 ([RR])
     * Updated ActiveMQ build: 6.2.1 => 6.2.9 ([RR])
