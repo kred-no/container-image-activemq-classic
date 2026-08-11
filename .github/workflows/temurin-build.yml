@@ -17,13 +17,18 @@ jobs:
       matrix:
         os: ['ubuntu-latest']
         version:
-          - runtime: '25-jre'
+          -
+            runtime: '25-jre'
             builder: '2.20.0'
             activemq: '6.2.1'
             hawtio: '1.7.2'
             postgres: '42.7.10'
-        #include : []
-        #exclude: []
+          -
+            runtime: '25-jre'
+            builder: '2.21.0'
+            activemq: '6.3.1'
+            hawtio: '1.7.2'
+            postgres: '42.7.13'
     
     permissions:
       packages: write

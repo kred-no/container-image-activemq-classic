@@ -78,3 +78,12 @@ See [`examples`](examples/) for other examples.
   * [Documentation](https://activemq.apache.org/components/classic/documentation/)
   * [Releases](https://activemq.apache.org/components/classic/download/)
   * [Release Notes](https://issues.apache.org/jira/secure/ReleaseNote.jspa?projectId=12311210&version=12354974)
+
+## Included
+
+| Name | Url |
+| :--  | :-- |
+| ActiveMQ Classic (temurin) | `https://downloads.apache.org/activemq/` |
+| ActiveMQ Classic (debian)  | `https://downloads01-he-fi.apache.org/activemq/` |
+| Postgres JDBC              | `https://repo1.maven.org/maven2/org/postgresql/postgresql` |
+| HawtIO Agent               | `https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/` |
