@@ -25,7 +25,7 @@ jobs:
             tag: '25-jre-headless'
         activemq:
           - ver: '6.2.9'
-            sha512: 'c1ed6f5ca467b4ed226644ea5d1cb034a71262c253cef1a6d57bdab4755c2f5b9d002954cc74248945e53b5c1c24c99f300e61968ed001f1c1360f297610cf8f'
+            sha512: '4179498a7132e6bbb41fd3396129383dd8106be4e5fd365b13abd5826b7e9685379ad5312ee802868ff1f0ad7bfda6b41c17fbd6d03cae7a1f77062939500c61'
           - ver: '6.3.1'
             sha512: 'bbef2edcfe9df51867d711f329f8ac61d46a16c713922d788751743fdbc32dcb7d8280ec433eec5a038aa26e7d0f19df33b701d00c0d098152ab3a4522b01929'
         #include : []
