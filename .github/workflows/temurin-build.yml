@@ -20,7 +20,7 @@ jobs:
           -
             runtime: '25-jre'
             builder: '2.20.0'
-            activemq: '6.2.1'
+            activemq: '6.2.9'
             hawtio: '1.7.2'
             postgres: '42.7.10'
           -
